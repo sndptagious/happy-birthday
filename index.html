@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Happy Birthday, Santoshi ♡</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #080407;
+      font-family: 'Georgia', serif;
+      touch-action: pan-x
+    }
+
+    canvas#bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none
+    }
+
+    #vig {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      background: radial-gradient(ellipse 90% 90% at 50% 50%, transparent 38%, rgba(0, 0, 0, 0.7) 100%)
+    }
+
+    #lt,
+    #lb {
+      position: fixed;
+      left: 0;
+      right: 0;
+      height: 36px;
+      z-index: 50;
+      background: #080407;
+      pointer-events: none
+    }
+
+    #lt {
+      top: 0
+    }
+
+    #lb {
+      bottom: 0
+    }
+
+    /* progress bar */
+    #pb-wrap {
+      position: fixed;
+      top: 36px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      z-index: 100;
+      background: rgba(255, 255, 255, 0.06)
+    }
+
+    #pb {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #c97b8c, #c8a96e);
+      will-change: width
+    }
+
+    /* scene engine */
+    .scene {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 1.3s ease;
+      z-index: 1
+    }
+
+    .scene.active {
+      opacity: 1;
+      pointer-events: all
+    }
+
+    /* dots */
+    #dots {
+      position: fixed;
+      bottom: 44px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 6px;
+      z-index: 100
+    }
+
+    .dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      transition: all .4s;
+      cursor: pointer
+    }
+
+    .dot.active {
+      background: #c97b8c;
+      transform: scale(1.7)
+    }
+
+    /* controls */
+    #ctrl {
+      position: fixed;
+      bottom: 42px;
+      right: 14px;
+      z-index: 100;
+      display: flex;
+      gap: 8px
+    }
+
+    #btn-play,
+    #btn-skip {
+      background: none;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: rgba(255, 255, 255, 0.38);
+      font-size: 10px;
+      letter-spacing: 2px;
+      padding: 5px 10px;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: all .3s;
+      -webkit-tap-highlight-color: transparent;
+      font-family: 'Georgia', serif
+    }
+
+    #btn-play:hover,
+    #btn-skip:hover {
+      color: rgba(255, 255, 255, .75);
+      border-color: rgba(255, 255, 255, .35)
+    }
+
+    #ctr {
+      position: fixed;
+      top: 46px;
+      right: 14px;
+      font-size: 9px;
+      letter-spacing: 3px;
+      color: rgba(255, 255, 255, .2);
+      z-index: 100
+    }
+
+    /* shared text */
+    .tag {
+      font-size: 9px;
+      letter-spacing: 5px;
+      text-transform: uppercase;
+      color: #c8a96e;
+      opacity: .8;
+      margin-bottom: 14px
+    }
+
+    .big {
+      font-size: clamp(36px, 10.5vw, 80px);
+      font-weight: 300;
+      line-height: 1.05;
+      color: #fdf6f0;
+      text-align: center
+    }
+
+    .big em {
+      font-style: italic;
+      color: #e8a7b4
+    }
+
+    .line {
+      font-size: clamp(16px, 4.5vw, 23px);
+      font-style: italic;
+      color: rgba(253, 246, 240, .75);
+      text-align: center;
+      line-height: 1.8;
+      padding: 0 28px;
+      max-width: 480px
+    }
+
+    .line em {
+      color: #e8a7b4;
+      font-style: normal
+    }
+
+    /* anim children */
+    .ac {
+      opacity: 0;
+      transform: translateY(22px);
+      transition: opacity .8s ease, transform .8s ease
+    }
+
+    .scene.active .ac {
+      opacity: 1;
+      transform: translateY(0)
+    }
+
+    .scene.active .ac:nth-child(1) {
+      transition-delay: .2s
+    }
+
+    .scene.active .ac:nth-child(2) {
+      transition-delay: .6s
+    }
+
+    .scene.active .ac:nth-child(3) {
+      transition-delay: 1s
+    }
+
+    .scene.active .ac:nth-child(4) {
+      transition-delay: 1.4s
+    }
+
+    .orn {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 16px 0;
+      opacity: 0;
+      transform: scaleX(.3);
+      transition: opacity .7s, transform .7s
+    }
+
+    .scene.active .orn {
+      opacity: .32;
+      transform: scaleX(1);
+      transition-delay: 1.6s
+    }
+
+    .ol {
+      width: 46px;
+      height: 1px;
+      background: #c97b8c
+    }
+
+    .od {
+      color: #c97b8c;
+      font-size: 10px
+    }
+
+    /* scene bg tints */
+    #s0 {
+      background: radial-gradient(ellipse 80% 70% at 50% 55%, #1c0810 0%, #080407 100%)
+    }
+
+    #s1 {
+      background: radial-gradient(ellipse 70% 60% at 45% 50%, #080d1c 0%, #080407 100%)
+    }
+
+    #s2,
+    #s4,
+    #s7,
+    #s9 {
+      background: #080407
+    }
+
+    #s3 {
+      background: radial-gradient(ellipse 70% 60% at 50% 45%, #091410 0%, #080407 100%)
+    }
+
+    #s5 {
+      background: radial-gradient(ellipse 80% 70% at 50% 55%, #1c0810 0%, #080407 100%)
+    }
+
+    #s6 {
+      background: radial-gradient(ellipse 75% 65% at 50% 50%, #10091a 0%, #080407 100%)
+    }
+
+    #s8 {
+      background: radial-gradient(ellipse 75% 65% at 50% 50%, #100913 0%, #080407 100%)
+    }
+
+    #sfut {
+      background: radial-gradient(ellipse 75% 65% at 50% 50%, #0e1218 0%, #080407 100%)
+    }
+
+    #sfin {
+      background: radial-gradient(ellipse 80% 80% at 50% 60%, #1a0810 0%, #080407 100%)
+    }
+
+    /* heartbeat */
+    @keyframes hb {
+
+      0%,
+      100% {
+        transform: scale(1)
+      }
+
+      35% {
+        transform: scale(1.18)
+      }
+
+      65% {
+        transform: scale(1.07)
+      }
+    }
+
+    .hb {
+      animation: hb 2.2s ease-in-out infinite
+    }
+
+    /* ── PHOTO SCENE ── */
+    .pscene {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center
+    }
+
+    .pframe {
+      position: relative;
+      width: min(70vw, 295px);
+      height: min(88vw, 375px);
+      border: 1px solid rgba(201, 123, 140, .22);
+      border-radius: 3px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, .025);
+      opacity: 0;
+      transform: scale(.91);
+      transition: opacity 1.1s ease, transform 1.1s ease
+    }
+
+    .scene.active .pframe {
+      opacity: 1;
+      transform: scale(1);
+      transition-delay: .35s
+    }
+
+    .pframe img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity .55s;
+      position: absolute;
+      inset: 0
+    }
+
+    .pframe img.on {
+      opacity: 1
+    }
+
+    .pph {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: opacity .4s
+    }
+
+    .pph.gone {
+      opacity: 0;
+      pointer-events: none
+    }
+
+    .phi {
+      font-size: 32px;
+      opacity: .18
+    }
+
+    .phl {
+      font-size: 10px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, .18)
+    }
+
+    .ubtn {
+      margin-top: 4px;
+      padding: 8px 18px;
+      background: transparent;
+      border: 1px solid rgba(201, 123, 140, .28);
+      color: rgba(201, 123, 140, .65);
+      font-family: 'Georgia', serif;
+      font-size: 10px;
+      letter-spacing: 2px;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: all .3s;
+      -webkit-tap-highlight-color: transparent
+    }
+
+    .ubtn:hover {
+      background: rgba(201, 123, 140, .1);
+      border-color: rgba(201, 123, 140, .55)
+    }
+
+    .pcap {
+      margin-top: 16px;
+      font-style: italic;
+      font-size: clamp(13px, 3.6vw, 16px);
+      color: rgba(253, 246, 240, .5);
+      text-align: center;
+      padding: 0 28px;
+      max-width: 380px;
+      opacity: 0;
+      transition: opacity 1s ease
+    }
+
+    .scene.active .pcap {
+      opacity: 1;
+      transition-delay: 1.1s
+    }
+
+    input[type=file] {
+      display: none
+    }
+
+    /* hetauda card */
+    .hcard {
+      background: rgba(201, 123, 140, .08);
+      border: 1px solid rgba(201, 123, 140, .2);
+      border-radius: 3px;
+      padding: 22px 26px;
+      max-width: 440px;
+      margin: 10px 24px 0;
+      opacity: 0;
+      transform: translateY(22px);
+      transition: opacity 1s ease, transform 1s ease
+    }
+
+    .scene.active .hcard {
+      opacity: 1;
+      transform: translateY(0);
+      transition-delay: 1.2s
+    }
+
+    .hcard p {
+      font-style: italic;
+      font-size: clamp(14px, 3.8vw, 17px);
+      color: rgba(253, 246, 240, .82);
+      line-height: 1.85;
+      text-align: center
+    }
+
+    .hcard em {
+      color: #e8a7b4
+    }
+
+    /* future */
+    .wlist {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      max-width: 390px;
+      width: 100%;
+      padding: 0 24px;
+      margin-top: 10px
+    }
+
+    .wish {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255, 255, 255, .032);
+      border-left: 2px solid #c97b8c;
+      padding: 10px 13px;
+      border-radius: 0 3px 3px 0;
+      opacity: 0;
+      transform: translateX(-16px);
+      transition: opacity .6s, transform .6s
+    }
+
+    .scene.active .wish:nth-child(1) {
+      opacity: 1;
+      transform: none;
+      transition-delay: .7s
+    }
+
+    .scene.active .wish:nth-child(2) {
+      opacity: 1;
+      transform: none;
+      transition-delay: 1s
+    }
+
+    .scene.active .wish:nth-child(3) {
+      opacity: 1;
+      transform: none;
+      transition-delay: 1.3s
+    }
+
+    .scene.active .wish:nth-child(4) {
+      opacity: 1;
+      transform: none;
+      transition-delay: 1.6s
+    }
+
+    .wi {
+      font-size: 15px;
+      flex-shrink: 0
+    }
+
+    .wt {
+      font-style: italic;
+      font-size: clamp(13px, 3.4vw, 15px);
+      color: rgba(253, 246, 240, .82);
+      line-height: 1.45
+    }
+
+    /* finale */
+    #sfin .fn {
+      font-size: clamp(50px, 14vw, 102px);
+      font-weight: 300;
+      font-style: italic;
+      color: #e8a7b4;
+      text-align: center;
+      line-height: 1;
+      opacity: 0;
+      transform: scale(.88);
+      transition: opacity 1.3s, transform 1.3s
+    }
+
+    #sfin.active .fn {
+      opacity: 1;
+      transform: scale(1);
+      transition-delay: .4s
+    }
+
+    #sfin .fh {
+      font-size: 46px;
+      margin-top: 20px;
+      opacity: 0;
+      transition: opacity 1s
+    }
+
+    #sfin.active .fh {
+      opacity: 1;
+      transition-delay: 1.3s
+    }
+
+    #sfin .fs {
+      font-style: italic;
+      font-size: clamp(14px, 3.8vw, 18px);
+      color: rgba(253, 246, 240, .52);
+      margin-top: 16px;
+      text-align: center;
+      line-height: 1.8;
+      padding: 0 28px;
+      opacity: 0;
+      transition: opacity 1s
+    }
+
+    #sfin.active .fs {
+      opacity: 1;
+      transition-delay: 2s
+    }
+
+    #sfin .rbtn {
+      margin-top: 28px;
+      padding: 10px 26px;
+      background: transparent;
+      border: 1px solid rgba(201, 123, 140, .32);
+      color: #e8a7b4;
+      font-family: 'Georgia', serif;
+      font-size: 11px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: 2px;
+      opacity: 0;
+      transition: opacity .8s, background .3s
+    }
+
+    #sfin.active .rbtn {
+      opacity: 1;
+      transition-delay: 2.8s
+    }
+
+    #sfin .rbtn:hover {
+      background: rgba(201, 123, 140, .1)
+    }
+  </style>
+</head>
+
+<body>
+
+  <canvas id="bg"></canvas>
+  <div id="vig"></div>
+  <div id="lt"></div>
+  <div id="lb"></div>
+  <div id="pb-wrap">
+    <div id="pb"></div>
+  </div>
+  <div id="ctr"></div>
+  <div id="dots"></div>
+  <div id="ctrl">
+    <button id="btn-play" onclick="togglePlay()">❚❚</button>
+    <button id="btn-skip" onclick="goTo(LAST)">end</button>
+  </div>
+
+  <!-- S0 TITLE -->
+  <div class="scene active" id="s0">
+    <div class="ac hb" style="font-size:44px;margin-bottom:4px">♡</div>
+    <div class="tag ac">a love story</div>
+    <h1 class="big ac">Happy Birthday,<br><em>Santoshi</em></h1>
+    <div class="orn">
+      <div class="ol"></div><span class="od">✦</span>
+      <div class="ol"></div>
+    </div>
+    <p class="line ac" style="font-size:clamp(12px,3.2vw,15px);opacity:.45;margin-top:2px">April 10, 2004</p>
+  </div>
+
+  <!-- S1 PHONE CALL -->
+  <div class="scene" id="s1">
+    <div class="tag ac">Chapter I</div>
+    <h2 class="big ac" style="font-size:clamp(30px,9vw,64px)">A call<br><em>about nothing</em></h2>
+    <div class="orn">
+      <div class="ol"></div><span class="od">—</span>
+      <div class="ol"></div>
+    </div>
+    <p class="line ac">Routine. Official.<br>You sounded like you had a hundred other things to do.</p>
+    <p class="line ac" style="font-size:clamp(13px,3.4vw,15px);opacity:.45;margin-top:6px"><em>And yet — something
+        stayed with me.</em></p>
+  </div>
+
+  <!-- S2 PHOTO 1 -->
+  <div class="scene" id="s2">
+    <div class="pscene">
+      <div class="pframe" id="pf0">
+        <img id="pi0" src="1.jpg" alt="" class="on">
+      </div>
+      <p class="pcap"><em>First impressions last forever.</em></p>
+    </div>
+  </div>
+
+  <!-- S3 JACKFRUIT -->
+  <div class="scene" id="s3">
+    <div class="ac" style="font-size:42px;margin-bottom:2px">🍈</div>
+    <div class="tag ac">Chapter III</div>
+    <h2 class="big ac" style="font-size:clamp(28px,8vw,58px)">The jackfruit<br><em>that changed everything</em></h2>
+    <div class="orn">
+      <div class="ol"></div><span class="od">—</span>
+      <div class="ol"></div>
+    </div>
+    <p class="line ac">Casually. Without fuss.<br><em>That gesture cracked me open.</em></p>
+  </div>
+
+  <!-- S4 PHOTO 2 -->
+  <div class="scene" id="s4">
+    <div class="pscene">
+      <div class="pframe" id="pf1">
+        <img id="pi1" src="2.jpg" alt="" class="on">
+      </div>
+      <p class="pcap">The one who brought jackfruit<br>and <em>accidentally held my heart.</em></p>
+    </div>
+  </div>
+
+  <!-- S5 HANDS -->
+  <div class="scene" id="s5">
+    <div class="tag ac">Chapter IV</div>
+    <h2 class="big ac" style="font-size:clamp(28px,8.5vw,62px)">When our hands<br><em>found each other</em></h2>
+    <div class="orn">
+      <div class="ol"></div><span class="od">—</span>
+      <div class="ol"></div>
+    </div>
+    <p class="line ac"><em>Warm. Quiet. Right.</em><br>No words needed.</p>
+  </div>
+
+  <!-- S6 HETAUDA -->
+  <div class="scene" id="s6">
+    <div class="tag ac">Chapter V · the one I think about</div>
+    <h2 class="big ac" style="font-size:clamp(38px,11vw,78px)"><em>Hetauda</em></h2>
+    <div class="hcard">
+      <p>The air felt different that night —<br>or maybe it was just us.<br><br>
+        Just you. Just me.<br><em>That quiet kind of magic.</em><br><br>
+        One of the best nights of my life.</p>
+    </div>
+  </div>
+
+  <!-- S7 PHOTO 3 -->
+  <div class="scene" id="s7">
+    <div class="pscene">
+      <div class="pframe" id="pf2">
+        <img id="pi2" src="3.jpg" alt="" class="on">
+      </div>
+      <p class="pcap"><em>Nights I'll never forget.</em></p>
+    </div>
+  </div>
+
+  <!-- S8 HER TOUCH -->
+  <div class="scene" id="s8">
+    <div class="tag ac">the small things</div>
+    <h2 class="big ac" style="font-size:clamp(28px,8vw,58px)">Your perfume.<br><em>Your touch.</em></h2>
+    <div class="orn">
+      <div class="ol"></div><span class="od">—</span>
+      <div class="ol"></div>
+    </div>
+    <p class="line ac">I catch it unexpectedly —<br>and everything stops.<br><em>You don't know what you do to me.</em>
+    </p>
+  </div>
+
+  <!-- S9 PHOTO 4 -->
+  <div class="scene" id="s9">
+    <div class="pscene">
+      <div class="pframe" id="pf3">
+        <img id="pi3" src="4.png" alt="" class="on">
+      </div>
+      <p class="pcap"><em>A future memory waiting to happen.</em></p>
+    </div>
+  </div>
+
+  <!-- S10 PHOTO 5 -->
+  <div class="scene" id="s10">
+    <div class="pscene">
+      <div class="pframe" id="pf4">
+        <img id="pi4" src="5.jpg" alt="" class="on">
+      </div>
+      <p class="pcap">A smile I want to<br><em>keep capturing forever.</em></p>
+    </div>
+  </div>
+
+  <!-- SFUT FUTURE -->
+  <div class="scene" id="sfut">
+    <div class="tag ac">what I want</div>
+    <h2 class="big ac" style="font-size:clamp(30px,8.5vw,62px)">A future<br><em>with you</em></h2>
+    <div class="wlist">
+      <div class="wish"><span class="wi">📸</span><span class="wt">Holding each other's hands throughout the ups and
+          downs of life.</span></div>
+      <div class="wish"><span class="wi">🌙</span><span class="wt">More nights like Hetauda</span></div>
+      <div class="wish"><span class="wi">🏔️</span><span class="wt">Somewhere neither of us has been</span></div>
+      <div class="wish"><span class="wi">♡</span><span class="wt">Love you — quietly, completely</span></div>
+    </div>
+  </div>
+
+  <!-- SFIN FINALE -->
+  <div class="scene" id="sfin">
+    <div class="fn">Santoshi</div>
+    <div class="fh hb">♡</div>
+    <p class="fs">You walked in quietly<br>and rearranged everything.<br>
+      <em>What do you say, my Matina </em>🫴🏻💍💐👰🏻‍♀️🤵🏻<br><em>Happy birthday, my favourite person.</em>
+    </p>
+    <button class="rbtn" onclick="restart()">Watch again ↺</button>
+  </div>
+
+  <script>
+    /* CANVAS */
+    const cv = document.getElementById('bg'), cx = cv.getContext('2d');
+    let W, H, stars = [], hts = [];
+    function resize() { W = cv.width = innerWidth; H = cv.height = innerHeight }
+    resize();
+    window.addEventListener('resize', () => { resize(); initStars() });
+    function initStars() {
+      stars = [];
+      const n = Math.floor(W * H / 5200);
+      for (let i = 0; i < n; i++) stars.push({ x: Math.random() * W, y: Math.random() * H, r: .15 + Math.random() * 1.1, a: Math.random(), da: (Math.random() - .5) * .005, col: Math.random() > .82 ? '#c8a96e' : '#fff' });
+      hts = []; for (let i = 0; i < 5; i++)spawnH();
+    }
+    function spawnH() { hts.push({ x: Math.random() * W, y: H + 20, vx: (Math.random() - .5) * .3, vy: -(0.28 + Math.random() * .45), sz: 8 + Math.random() * 10, life: 0, max: 210 + Math.random() * 110 }) }
+    function tick() {
+      cx.clearRect(0, 0, W, H);
+      stars.forEach(s => { s.a += s.da; if (s.a < 0) { s.a = 0; s.da *= -1 } if (s.a > 1) { s.a = 1; s.da *= -1 } cx.beginPath(); cx.arc(s.x, s.y, s.r, 0, Math.PI * 2); cx.fillStyle = s.col; cx.globalAlpha = s.a * .62; cx.fill() });
+      cx.globalAlpha = 1;
+      hts = hts.filter(h => h.life < h.max);
+      while (hts.length < 5) spawnH();
+      hts.forEach(h => { h.x += h.vx; h.y += h.vy; h.life++; const p = h.life / h.max; const al = p < .1 ? p * 10 : p > .8 ? (1 - p) * 5 : 1; cx.globalAlpha = al * .25; cx.fillStyle = '#c97b8c'; cx.font = h.sz + 'px serif'; cx.textAlign = 'center'; cx.fillText('♡', h.x, h.y) });
+      cx.globalAlpha = 1; requestAnimationFrame(tick);
+    }
+    initStars(); tick();
+
+    /* SCENE MANAGER */
+    const scenes = [...document.querySelectorAll('.scene')];
+    const N = scenes.length;
+    const LAST = N - 1;
+    const dotsEl = document.getElementById('dots');
+    const pb = document.getElementById('pb');
+    const ctr = document.getElementById('ctr');
+    const btnPlay = document.getElementById('btn-play');
+    const btnSkip = document.getElementById('btn-skip');
+    // durations per scene (ms)
+    const DUR = [5000, 5000, 5500, 5000, 5500, 5000, 6000, 5500, 5000, 5500, 5500, 5500, 7500];
+
+    let cur = 0, playing = true, RAF = null, barStart = null, elapsed = 0;
+
+    dotsEl.innerHTML = '';
+    scenes.forEach((_, i) => { const d = document.createElement('div'); d.className = 'dot' + (i === 0 ? ' active' : ''); d.onclick = () => { pause(); goTo(i) }; dotsEl.appendChild(d) });
+
+    function updateUI() {
+      document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === cur));
+      ctr.textContent = (cur + 1) + ' / ' + N;
+      btnSkip.style.opacity = cur >= LAST ? 0 : 1;
+      btnSkip.style.pointerEvents = cur >= LAST ? 'none' : '';
+    }
+
+    function goTo(n) {
+      if (n < 0 || n >= N) return;
+      scenes[cur].classList.remove('active');
+      cur = n; scenes[cur].classList.add('active');
+      elapsed = 0; updateUI();
+      if (playing) startTimer();
+    }
+
+    function startTimer() {
+      cancelAnimationFrame(RAF);
+      const dur = DUR[cur] || 5500;
+      barStart = performance.now() - elapsed;
+      function frame(now) {
+        const pct = Math.min((now - barStart) / dur, 1);
+        pb.style.width = (pct * 100) + '%';
+        if (pct < 1) { RAF = requestAnimationFrame(frame) }
+        else { elapsed = 0; if (cur < LAST) goTo(cur + 1); else { playing = false; btnPlay.textContent = '▶'; pb.style.width = '100%' } }
+      }
+      RAF = requestAnimationFrame(frame);
+    }
+
+    function pause() {
+      playing = false; cancelAnimationFrame(RAF);
+      if (barStart !== null) elapsed = performance.now() - barStart;
+      btnPlay.textContent = '▶';
+    }
+    function resume() { playing = true; btnPlay.textContent = '❚❚'; startTimer() }
+    function togglePlay() { if (playing) pause(); else resume() }
+    function restart() { goTo(0); if (!playing) resume() }
+
+    updateUI(); startTimer();
+
+    /* KEYBOARD */
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); pause(); goTo(cur + 1) }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); pause(); goTo(cur - 1) }
+      if (e.key === 'p' || e.key === 'P') togglePlay();
+    });
+
+    /* SWIPE */
+    let tx = 0, ty = 0;
+    document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; ty = e.touches[0].clientY }, { passive: true });
+    document.addEventListener('touchend', e => {
+      const dx = e.changedTouches[0].clientX - tx;
+      const dy = e.changedTouches[0].clientY - ty;
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 36) { pause(); goTo(cur + (dx < 0 ? 1 : -1)) }
+    });
+
+    /* PHOTO UPLOAD */
+    function pick(i, e) { e.stopPropagation(); pause(); document.getElementById('pu' + i).click() }
+    function load(i, inp) {
+      if (!inp.files[0]) return;
+      const img = document.getElementById('pi' + i);
+      const pp = document.getElementById('pp' + i);
+      const r = new FileReader();
+      r.onload = ev => { img.src = ev.target.result; img.onload = () => { img.classList.add('on'); pp.classList.add('gone') } };
+      r.readAsDataURL(inp.files[0]); inp.value = '';
+    }
+  </script>
+</body>
+
+</html>
